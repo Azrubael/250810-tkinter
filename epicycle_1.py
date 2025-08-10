@@ -1,0 +1,48 @@
+import tkinter as tk
+import math
+
+
+def draw_epicycloid(canvas, R, r, d):
+    num_points=5*R
+    points = []
+    for i in range(num_points):
+        theta = i * (2 * math.pi / num_points)
+        x = (R + r) * math.cos(theta) - d * math.cos((R + r) / r * theta)
+        y = (R + r) * math.sin(theta) - d * math.sin((R + r) / r * theta)
+        points.append((x + 300, y + 300))  # Centering shift
+
+    for i in range(len(points) - 1):
+        canvas.create_line(points[i], points[i + 1], fill="blue")
+
+
+def on_button_click():
+    draw_epicycloid(canvas, R, r, d)
+
+
+def on_clear_button_click():
+    canvas.delete("all")
+
+
+# create a new window
+root = tk.Tk()
+root.title("Epicycloid")
+
+# Create a new canvas
+canvas = tk.Canvas(root, width=600, height=600, bg="white")
+canvas.pack()
+
+# Parameters for the epycycle
+R = 200  # Staric circle radius
+r = 25   # Prbiting circle radius
+d = 50   # Point radius to draw the epicycle
+draw_epicycloid(canvas, R, r, d)
+
+# Drawing the epicycloid
+draw_button = tk.Button(root, text="Redraw", command=on_button_click)
+draw_button.pack(side=tk.RIGHT)
+
+clear_button = tk.Button(root, text="Clear", command=on_clear_button_click)
+clear_button.pack(side=tk.RIGHT, padx=(0, 25))
+
+# Run
+root.mainloop()
