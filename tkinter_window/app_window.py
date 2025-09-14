@@ -4,52 +4,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter.scrolledtext import ScrolledText
 from queue import Queue, Empty
-import time
-
-class TextRedirector:
-    """
-    Redirector that safely writes text into a tkinter Text widget from any thread.
-    It uses a queue and schedules periodic polling on the Tk mainloop to flush items.
-    """
-    def __init__(self, text_widget, tag=None):
-        self.text_widget = text_widget
-        self.queue = Queue()
-        self.tag = tag
-
-        # Start the periodic flush loop on the widget's event loop
-        self._schedule_flush()
-
-    def write(self, msg):
-        if not msg:
-            return
-        # Normalize to str
-        self.queue.put(str(msg))
-
-    def flush(self):
-        # No-op for compatibility
-        pass
-
-    def _schedule_flush(self):
-        try:
-            self._flush_from_queue()
-        finally:
-            # schedule next flush
-            self.text_widget.after(100, self._schedule_flush)
-
-    def _flush_from_queue(self):
-        try:
-            while True:
-                item = self.queue.get_nowait()
-                # Insert at end and scroll to end
-                self.text_widget.configure(state='normal')
-                if self.tag:
-                    self.text_widget.insert(tk.END, item, (self.tag,))
-                else:
-                    self.text_widget.insert(tk.END, item)
-                self.text_widget.see(tk.END)
-                self.text_widget.configure(state='disabled')
-        except Empty:
-            return
+from text_redirector import TextRedirector
 
 
 class AppWindow(tk.Tk):
@@ -62,8 +17,43 @@ class AppWindow(tk.Tk):
         self.title(title)
         self.geometry(f"{width}x{height}")
         self._create_menu()
-        self._create_canvas()
+        self._create_top_canvas()
 
+        # Main frame
+        self.frame = tk.Frame(self)
+        self.frame.pack(fill=tk.X, expand=True)
+
+        # ScrolledText acts as the canvas for stdout/stderr
+        self.output = ScrolledText(self.frame, wrap=tk.WORD, state='disabled')
+        self.output.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        # Add a simple toolbar with clear and close buttons
+        toolbar = tk.Frame(self)
+        toolbar.pack(fill=tk.X, side=tk.BOTTOM)
+        clear_btn = tk.Button(toolbar, text="Clear", command=self.clear)
+        clear_btn.pack(side=tk.LEFT, padx=4, pady=4)
+        close_btn = tk.Button(toolbar, text="Close", command=self.close)
+        close_btn.pack(side=tk.LEFT, padx=4, pady=4)
+
+        # Optional styling for stderr vs stdout
+        self.output.tag_configure("stderr", foreground="red")
+        self.output.tag_configure("stdout", foreground="black")
+
+        # Create redirectors
+        self.stdout_redirector = TextRedirector(self.output, tag="stdout")
+        self.stderr_redirector = TextRedirector(self.output, tag="stderr")
+
+        # Save original streams so they can be restored if needed
+        self._orig_stdout = sys.stdout
+        self._orig_stderr = sys.stderr
+
+        # Replace system stdout/stderr
+        sys.stdout = self.stdout_redirector
+        sys.stderr = self.stderr_redirector
+
+        # Handle window close properly
+        self.protocol("WM_DELETE_WINDOW", self.close)
+        
 
     def _create_menu(self):
         menubar = tk.Menu(self)
@@ -84,9 +74,9 @@ class AppWindow(tk.Tk):
         self.config(menu=menubar)
 
 
-    def _create_canvas(self):
+    def _create_top_canvas(self):
         self.canvas = tk.Canvas(self, bg="white")
-        self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.canvas.pack(fill=tk.X, expand=False, side="top")
         # initial text
         self.text_shpk = self.canvas.create_text(
             10, 10,
@@ -122,3 +112,20 @@ class AppWindow(tk.Tk):
 
     def show_about(self):
         messagebox.showinfo("About", "Simple Tkinter app — selects a file and shows its path on the canvas.")
+
+
+    def clear(self):
+        """Clear the output widget."""
+        self.output.configure(state='normal')
+        self.output.delete('1.0', tk.END)
+        self.output.configure(state='disabled')
+
+
+    def close(self):
+        """Restore stdout/stderr and destroy the window."""
+        sys.stdout = self._orig_stdout
+        sys.stderr = self._orig_stderr
+        try:
+            self.destroy()
+        except tk.TclError:
+            pass
