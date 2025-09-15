@@ -1,9 +1,7 @@
 import sys
-import threading
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter.scrolledtext import ScrolledText
-from queue import Queue, Empty
 from text_redirector import TextRedirector
 
 
@@ -65,6 +63,12 @@ class AppWindow(tk.Tk):
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.quit)
         menubar.add_cascade(label="File", menu=file_menu)
+        
+        # Utility menu
+        utility_menu = tk.Menu(menubar, tearoff=False)
+        utility_menu.add_command(label="Generate", command=self.generate_output)
+        utility_menu.add_command(label="Clear", command=self.clear)
+        menubar.add_cascade(label="Utility", menu=utility_menu)
 
         # Help menu
         help_menu = tk.Menu(menubar, tearoff=False)
@@ -109,6 +113,16 @@ class AppWindow(tk.Tk):
             # Update canvas text with file name
             self.canvas.itemconfigure(self.text_vop, text=message)
 
+    def generate_output(self):
+        import traceback
+        print("This is a standard output message.")
+        try:
+            # Intentionally raise an exception to demonstrate error handling
+            raise Exception("This is an error message.")
+        except Exception as e:
+            # Capture and print the traceback
+            traceback.print_exc()
+            # self.canvas.itemconfigure(self.text_vop, text=message)
 
     def show_about(self):
         messagebox.showinfo("About", "Simple Tkinter app — selects a file and shows its path on the canvas.")
