@@ -104,6 +104,7 @@ class AppWindow(tk.Tk):
         if filename:
             # Update canvas text with file name
             self.canvas.itemconfigure(self.text_shpk, text=message)
+        return filename
 
 
     def open_vop(self):
@@ -112,6 +113,8 @@ class AppWindow(tk.Tk):
         if filename:
             # Update canvas text with file name
             self.canvas.itemconfigure(self.text_vop, text=message)
+        return filename
+
 
     def generate_output(self):
         import traceback
