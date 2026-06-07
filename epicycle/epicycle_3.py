@@ -47,7 +47,7 @@ canvas = tk.Canvas(root, width=window_width, height=window_height, bg="white")
 canvas.pack()
 
 # Parameters for the epycycle
-R = 210  # Static circle radius
+R = 215  # Static circle radius
 r = 25   # Rotating circle radius
 d = 45   # Point radius to draw the epicycle
 draw_epicycloid(canvas, R, r, d, math.radians(current_angle))
